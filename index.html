@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>For Nisrine ❤️</title>
+    <title>For GirlName ❤️</title>
+
     <style>
       body {
         margin: 0;
@@ -10,10 +11,35 @@
         font-family: "Segoe UI", sans-serif;
         overflow: hidden;
         color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
       }
 
       canvas {
-        display: block;
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 20px;
+      }
+
+      #hud {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        font-size: 18px;
+        opacity: 0.9;
+      }
+
+      #messageBox {
+        position: absolute;
+        top: 12%;
+        background: rgba(255, 255, 255, 0.96);
+        padding: 18px 32px;
+        border-radius: 28px;
+        font-size: 22px;
+        color: #ff4d6d;
+        display: none;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
       }
 
       .overlay {
@@ -23,7 +49,7 @@
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.85);
         text-align: center;
         z-index: 10;
       }
@@ -39,41 +65,21 @@
         max-width: 720px;
         line-height: 1.6;
       }
-
-      #messageBox {
-        position: absolute;
-        top: 14%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255, 255, 255, 0.97);
-        padding: 20px 34px;
-        border-radius: 32px;
-        font-size: 22px;
-        color: #ff4d6d;
-        display: none;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.45);
-      }
-
-      #hud {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        font-size: 18px;
-        opacity: 0.9;
-      }
     </style>
   </head>
+
   <body>
-    <canvas id="game"></canvas>
+    <canvas id="game" width="420" height="420"></canvas>
+
     <div id="hud"></div>
     <div id="messageBox"></div>
 
     <div id="finalScreen" class="overlay">
-      <h1>Nisrine ❤️</h1>
+      <h1>GirlName ❤️</h1>
       <p>
-        You caught every heart.<br /><br />
-        Which makes sense… because you caught mine long ago.<br /><br />
-        So here is my question, simple and true:<br /><br />
+        You collected every heart.<br /><br />
+        Just like you collected mine.<br /><br />
+        So tell me…<br /><br />
         <strong>Will you be my Valentine, today and forever?</strong> 💍💖
       </p>
     </div>
@@ -81,96 +87,37 @@
     <script>
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
+      const hud = document.getElementById("hud");
       const messageBox = document.getElementById("messageBox");
       const finalScreen = document.getElementById("finalScreen");
-      const hud = document.getElementById("hud");
 
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const gridSize = 20;
+      const tileCount = canvas.width / gridSize;
 
-      const player = {
-        x: canvas.width / 2,
-        y: canvas.height - 70,
-        width: 90,
-        height: 18,
-      };
+      const TARGET_SCORE = 8; // ✅ réduit
+      const LOGIC_SPEED = 120;
+      const MESSAGE_TIME = 3000;
 
-      const MESSAGE_DISPLAY_TIME = 4000; // ⏳ messages visibles plus longtemps
+      let snake, direction, food, score, gameEnded;
 
-      const levels = [
-        {
-          name: "Level 1",
-          target: 6,
-          baseSpeed: 4, // ⚡ plus rapide
-          messages: [
-            "You make me smile",
-            "You are my calm",
-            "Life feels better with you",
-            "You are my favorite thought",
-            "I love you, Nisrine",
-          ],
-        },
-        {
-          name: "Level 2",
-          target: 10,
-          baseSpeed: 6,
-          messages: [
-            "You inspire me",
-            "You are my home",
-            "Every moment with you matters",
-            "You make love easy",
-            "You are my forever",
-          ],
-        },
-        {
-          name: "Level 3",
-          target: 14,
-          baseSpeed: 8,
-          messages: [
-            "You are my best choice",
-            "I choose you, always",
-            "My heart knows your name",
-            "You are my constant",
-            "This love is real",
-          ],
-        },
+      const messages = [
+        "You make my heart smile",
+        "You are my safe place",
+        "Every day with you is special",
+        "You are my favorite person",
+        "I love you, GirlName",
+        "You are my forever",
       ];
 
-      let hearts = [];
-      let levelIndex = 0;
-      let caught = 0;
-      let gameEnded = false;
-
-      function createHeart() {
+      function randomFood() {
         return {
-          x: Math.random() * (canvas.width - 28),
-          y: -30,
-          size: 26,
-          speed: levels[levelIndex].baseSpeed + Math.random() * 2,
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount),
         };
       }
 
-      function drawHeart(x, y, size) {
-        ctx.fillStyle = "#ff5f9e";
-        ctx.beginPath();
-        ctx.moveTo(x + size / 2, y + size);
-        ctx.bezierCurveTo(
-          x + size * 1.3,
-          y + size * 0.4,
-          x + size,
-          y - size / 3,
-          x + size / 2,
-          y + size / 3,
-        );
-        ctx.bezierCurveTo(
-          x,
-          y - size / 3,
-          x - size * 0.3,
-          y + size * 0.4,
-          x + size / 2,
-          y + size,
-        );
-        ctx.fill();
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
       }
 
       function showMessage(text) {
@@ -179,67 +126,124 @@
         clearTimeout(messageBox.hideTimeout);
         messageBox.hideTimeout = setTimeout(() => {
           messageBox.style.display = "none";
-        }, MESSAGE_DISPLAY_TIME);
+        }, MESSAGE_TIME);
       }
 
-      function nextLevel() {
-        levelIndex++;
-        caught = 0;
-        hearts = [];
-
-        if (levelIndex >= levels.length) {
-          gameEnded = true;
-          finalScreen.style.display = "flex";
-        }
+      function resetGame() {
+        snake = [{ x: 10, y: 10, vx: 10, vy: 10 }];
+        direction = { x: 1, y: 0 };
+        food = randomFood();
+        score = 0;
+        gameEnded = false;
+        finalScreen.style.display = "none";
+        messageBox.style.display = "none";
       }
 
-      function update() {
+      function updateLogic() {
         if (gameEnded) return;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const head = snake[0];
+        const newHead = {
+          x: head.x + direction.x,
+          y: head.y + direction.y,
+          vx: head.vx,
+          vy: head.vy,
+        };
 
-        // Player
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-
-        if (Math.random() < 0.045) {
-          hearts.push(createHeart());
+        // 💥 Collision = restart
+        if (
+          newHead.x < 0 ||
+          newHead.y < 0 ||
+          newHead.x >= tileCount ||
+          newHead.y >= tileCount ||
+          snake.some((s) => s.x === newHead.x && s.y === newHead.y)
+        ) {
+          resetGame();
+          return;
         }
 
-        hearts.forEach((heart, index) => {
-          heart.y += heart.speed;
-          drawHeart(heart.x, heart.y, heart.size);
+        snake.unshift(newHead);
 
-          if (
-            heart.x < player.x + player.width &&
-            heart.x + heart.size > player.x &&
-            heart.y < player.y + player.height &&
-            heart.y + heart.size > player.y
-          ) {
-            caught++;
-            showMessage(
-              levels[levelIndex].messages[
-                (caught - 1) % levels[levelIndex].messages.length
-              ],
-            );
-            hearts.splice(index, 1);
+        if (newHead.x === food.x && newHead.y === food.y) {
+          score++;
+          showMessage(messages[(score - 1) % messages.length]);
+          food = randomFood();
 
-            if (caught >= levels[levelIndex].target) {
-              nextLevel();
-            }
+          if (score >= TARGET_SCORE) {
+            gameEnded = true;
+            finalScreen.style.display = "flex";
           }
-        });
-
-        hud.textContent = `${levels[levelIndex].name} • Hearts: ${caught}/${levels[levelIndex].target}`;
-
-        requestAnimationFrame(update);
+        } else {
+          snake.pop();
+        }
       }
 
-      window.addEventListener("mousemove", (e) => {
-        player.x = e.clientX - player.width / 2;
+      function drawHeart(x, y) {
+        const px = x * gridSize;
+        const py = y * gridSize;
+        const s = gridSize - 4;
+
+        ctx.fillStyle = "#ff5f9e";
+        ctx.beginPath();
+        ctx.moveTo(px + s / 2 + 2, py + s + 2);
+        ctx.bezierCurveTo(
+          px + s + 6,
+          py + s / 2,
+          px + s / 2 + 2,
+          py,
+          px + s / 2 + 2,
+          py + s / 3,
+        );
+        ctx.bezierCurveTo(
+          px,
+          py,
+          px - 6,
+          py + s / 2,
+          px + s / 2 + 2,
+          py + s + 2,
+        );
+        ctx.fill();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        snake.forEach((s, i) => {
+          s.vx = lerp(s.vx, s.x, 0.35);
+          s.vy = lerp(s.vy, s.y, 0.35);
+
+          const px = s.vx * gridSize;
+          const py = s.vy * gridSize;
+
+          ctx.fillStyle = i === 0 ? "#ffffff" : "rgba(255,255,255,0.85)";
+          ctx.beginPath();
+          ctx.roundRect(px, py, gridSize - 2, gridSize - 2, 8);
+          ctx.fill();
+        });
+
+        drawHeart(food.x, food.y);
+        hud.textContent = `Hearts: ${score}/${TARGET_SCORE}`;
+      }
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowUp" && direction.y === 0)
+          direction = { x: 0, y: -1 };
+        if (e.key === "ArrowDown" && direction.y === 0)
+          direction = { x: 0, y: 1 };
+        if (e.key === "ArrowLeft" && direction.x === 0)
+          direction = { x: -1, y: 0 };
+        if (e.key === "ArrowRight" && direction.x === 0)
+          direction = { x: 1, y: 0 };
       });
 
-      update();
+      resetGame();
+      setInterval(updateLogic, LOGIC_SPEED);
+
+      function render() {
+        draw();
+        requestAnimationFrame(render);
+      }
+      render();
     </script>
   </body>
 </html>
